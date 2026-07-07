@@ -2,6 +2,7 @@
   "name": "bulldemo",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -10,6 +11,7 @@
   "license": "ISC",
   "description": "bullmq tutorial",
   "dependencies": {
+    "@bull-board/ui": "^8.1.2",
     "bull": "^4.16.5",
     "dotenv": "^17.4.2"
   }

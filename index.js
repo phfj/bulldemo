@@ -12,16 +12,23 @@ dotenv.config();
 
 //create redis options with the redis details (bull queue will be connected to the redis server, so we create this redis option)
 const  { REDIS_HOST, REDIS_PORT, REDIS_PASSWORD } = process.env;
-const redisOptions = {
+
+//QUEUE OPTIONS
+const queueOptions = {
     redis: { host:  REDIS_HOST, port: REDIS_PORT,  password: REDIS_PASSWORD },
+    limiter: {
+        max:1,
+        duration:10000,
+    }
 };
+//limit option throttle the function execution
 
 //DEFINE QUEUE
-const burgerQueue = new Bull("burger", redisOptions); //name of queue is burger (burguerQueue object created using Bull class)
+const burgerQueue = new Bull("burger", queueOptions); //name of queue is burger (burguerQueue object created using Bull class)
 
 //REGISTER PROCESSOR (consumer)
 //the function will execute when a new job is added to the burger queue
-burgerQueue.process(async (job, done) => {
+burgerQueue.process(async (job) => {
     /**console.log("Preparing the burger!");
     setTimeout(() => {
         console.log("Burger ready!");
@@ -30,32 +37,31 @@ burgerQueue.process(async (job, done) => {
 
     try{
         //STEP 1
-        job.log("Grill the patty.");
-        job.progress(20);
+        await job.log("Grill the patty.");
+        await job.progress(20);
         await sleep(5000);
 
         //STEP 2
-        job.log("Toast the buns.");
-        job.progress(40);
+        await job.log("Toast the buns.");
+        await job.progress(40);
         await sleep(5000);
 
         //STEP 3
-        job.log("Add toppings.");
-        job.progress(60);
+        await job.log("Add toppings.");
+        await job.progress(60);
         await sleep(5000);
 
         //STEP 4
-        job.log("");
-        job.log("Assemble layers.");
-        job.progress(80);
+        await job.log("");
+        await job.log("Assemble layers.");
+        await job.progress(80);
         await sleep(5000);
 
         //STEP 5
-        job.log("Burger ready");
+        await job.log("Burger ready");
         await job.progress(100);
-        done();
     }catch(err){
-        done(err);
+        throw err;
     }
 });
 
@@ -73,10 +79,12 @@ app.use("/admin/queues", serverAdapter.getRouter());
 app.listen(4000, async() => {
     console.log("Bull Board running at http://localhost:4000/admin/queues");
 
-    //ADD JOB TO THE QUEUE
-    await burgerQueue.add({
+    const jobs = [...new Array(2)].map(_ => ({
         bun: "🍔",
         cheese: "🧀",
         toppings: ["🍅","🫑","🥬","🌶️"],
-    });
+    }));
+
+    //ADD JOB TO THE QUEUE
+    await Promise.all(jobs.map((job) => burgerQueue.add(job)));
 });

@@ -1,4 +1,4 @@
-//SIMPLE QUEUE
+//IDEMPOTENCY
 import Bull from "bull";
 import dotenv from "dotenv";
 import express from "express";
@@ -9,6 +9,8 @@ import { ExpressAdapter } from "@bull-board/express";
 
 //load environment variables
 dotenv.config();
+
+const TIME = 4000;
 
 //create redis options with the redis details (bull queue will be connected to the redis server, so we create this redis option)
 const  { REDIS_HOST, REDIS_PORT, REDIS_PASSWORD } = process.env;
@@ -39,23 +41,25 @@ burgerQueue.process(async (job) => {
         //STEP 1
         await job.log("Grill the patty.");
         await job.progress(20);
-        await sleep(5000);
+        await sleep(TIME);
 
         //STEP 2
+        //25% chance of failure (let's see what happens when the job fails at step 2)
+        if(Math.random() > 0.25) throw new Error("Toast burnt!");
         await job.log("Toast the buns.");
         await job.progress(40);
-        await sleep(5000);
+        await sleep(TIME);
 
         //STEP 3
         await job.log("Add toppings.");
         await job.progress(60);
-        await sleep(5000);
+        await sleep(TIME);
 
         //STEP 4
         await job.log("");
         await job.log("Assemble layers.");
         await job.progress(80);
-        await sleep(5000);
+        await sleep(TIME);
 
         //STEP 5
         await job.log("Burger ready");
@@ -79,12 +83,12 @@ app.use("/admin/queues", serverAdapter.getRouter());
 app.listen(4000, async() => {
     console.log("Bull Board running at http://localhost:4000/admin/queues");
 
-    const jobs = [...new Array(2)].map(_ => ({
+    const jobs = [...new Array(5)].map(_ => ({
         bun: "🍔",
         cheese: "🧀",
         toppings: ["🍅","🫑","🥬","🌶️"],
     }));
 
     //ADD JOB TO THE QUEUE
-    await Promise.all(jobs.map((job) => burgerQueue.add(job)));
+    await Promise.all(jobs.map((job) => burgerQueue.add(job, {attempts: 3})));
 });

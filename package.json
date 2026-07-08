@@ -11,8 +11,11 @@
   "license": "ISC",
   "description": "bullmq tutorial",
   "dependencies": {
+    "@bull-board/api": "^8.1.2",
+    "@bull-board/express": "^8.1.2",
     "@bull-board/ui": "^8.1.2",
     "bull": "^4.16.5",
-    "dotenv": "^17.4.2"
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
   }
 }
